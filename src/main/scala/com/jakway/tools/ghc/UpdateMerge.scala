@@ -173,7 +173,7 @@ object Git {
   }
 
   def updateSubmodules(cwd: File): ProcessBuilder = {
-    Process(Seq("git", "submodule", "--init", "--recursive"), Some(cwd)),
+    Process(Seq("git", "submodule", "update", "--init", "--recursive"), Some(cwd))
   }
 
   private def readCurrentBranch(cwd: File): String = {
