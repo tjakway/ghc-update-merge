@@ -111,7 +111,7 @@ object UpdateMerge {
       Process("""find . \( -type f -name '*.hi' -or -name '*.o' \) -delete""", Some(cwd)),
       Process(Seq("make", "distclean"), Some(cwd)),
       Process(Seq("git", "clean", "-f", "-d"), Some(cwd)),
-      Process(Seq("git", "submodule", "--init", "--recursive"), Some(cwd)),
+      Git.updateSubmodules(cwd),
       Process(Seq("git", "submodule", "foreach", "git", "reset", "--hard"), Some(cwd)))
       .reduceLeft(_ ### _)
 
@@ -172,6 +172,10 @@ object Git {
     Process(Seq("git", "rev-parse", "--abbrev-ref", "HEAD"), Some(cwd))
   }
 
+  def updateSubmodules(cwd: File): ProcessBuilder = {
+    Process(Seq("git", "submodule", "--init", "--recursive"), Some(cwd)),
+  }
+
   private def readCurrentBranch(cwd: File): String = {
     val pb = getCurrentBranch(cwd)
 
@@ -197,6 +201,7 @@ object Git {
     checkout(cwd)("master") #&&
       pull(cwd) #&&
       checkout(cwd)(currentBranch) #&&
-      mergeMaster(cwd)
+      mergeMaster(cwd) #&&
+      updateSubmodules(cwd)
   }
 }
