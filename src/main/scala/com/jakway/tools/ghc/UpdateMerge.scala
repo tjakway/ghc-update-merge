@@ -4,9 +4,7 @@ import java.io.{File, InputStream, OutputStream, PrintWriter}
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
 
-import scala.sys.process.Process
-import scala.sys.process.ProcessBuilder
-import scala.sys.process.{Process, ProcessIO}
+import scala.sys.process.{Process, ProcessBuilder, ProcessIO, ProcessLogger}
 import scala.util.Try
 
 object ProcessUtils {
@@ -35,16 +33,28 @@ object ProcessUtils {
                          stdoutFile: File,
                          stderrFile: File): Int = {
 
-    val (stdout, stderr, exitValue) = runGetStreams(pb)
+    //create temp files to redirect stdout and stderr to
+    val stdoutTemp = Files.createTempFile(UpdateMerge.tempPrefix, null).toFile
+    val stderrTemp = Files.createTempFile(UpdateMerge.tempPrefix, null).toFile
 
+    stdoutTemp.deleteOnExit()
+    stderrTemp.deleteOnExit()
+
+    val stdoutWriter = new PrintWriter(stdoutTemp)
+    val stderrWriter = new PrintWriter(stderrTemp)
+
+    //run the process and block until we get the exit value
+    val processLogger = ProcessLogger(s => stdoutWriter.write(s),
+      s => stderrWriter.write(s))
+    val exitValue = pb.!(processLogger)
+
+    Try { stdoutWriter.close() }
+    Try { stderrWriter.close() }
+
+    //if the exit code is nonzero copy the files we redirected to
     if(exitValue != 0) {
-      val stdoutWriter = new PrintWriter(stdoutFile)
-      stdoutWriter.write(stdout.toString)
-      Try { stdoutWriter.close() }
-
-      val stderrWriter = new PrintWriter(stderrFile)
-      stderrWriter.write(stderr.toString)
-      Try { stderrWriter.close() }
+      Files.copy(stdoutTemp.toPath, stdoutFile.toPath)
+      Files.copy(stderrTemp.toPath, stderrFile.toPath)
     }
 
     exitValue
@@ -53,6 +63,8 @@ object ProcessUtils {
 
 object UpdateMerge {
   val usage: String = "scala UpdateMerge [ghc directories...]"
+
+  val tempPrefix: String = "updatemerge"
 
   def main(args: Array[String]): Unit = {
     if(args.isEmpty) {
