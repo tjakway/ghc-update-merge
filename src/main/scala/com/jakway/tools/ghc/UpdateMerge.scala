@@ -85,9 +85,17 @@ object UpdateMerge {
 
     lazy val buildOrRebuild = make(dir) #|| rebuild(dir)
 
-    val exitCode = (Git.pullAndMergeMasterWithCurrentBranch(dir) #&& buildOrRebuild).!
+    val gitExitCode = Git.pullAndMergeMasterWithCurrentBranch(dir).!
+    if(gitExitCode == 0) {
+      val exitCode = ProcessUtils.runRedirectOnError(buildOrRebuild,
+        new File(dir, "make_stdout"),
+        new File(dir, "make_stderr"))
 
-    println(s"Finished with $dir, final exit code: $exitCode")
+      println(s"Finished with $dir, final exit code: $exitCode")
+    } else {
+      throw new RuntimeException(s"Git.pullAndMergeMasterWithCurrentBranch(dir).! " +
+        s"returned exit code $gitExitCode")
+    }
   }
 
   def checkCwd(cwd: File): Unit = {
