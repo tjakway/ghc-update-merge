@@ -187,7 +187,7 @@ object Git {
       throw RevParseException(genericErrorMessage +
         s": expected stdout.lines.length == 1, but got ${stdout.lines.length}")
     } else {
-      stdout
+      stdout.trim
     }
   }
 
