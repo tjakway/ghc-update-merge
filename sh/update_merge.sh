@@ -2,7 +2,15 @@
 
 #go to script definition dir
 #see https://stackoverflow.com/questions/3349105/how-to-set-current-working-directory-to-the-directory-of-the-script
-cd "$(dirname "$0")"
+if [[ -L "$0" ]]; then
+    SCRIPT_LOC=$(readlink "$0")
+else
+    SCRIPT_LOC="$0"
+fi
+
+cd "$(dirname "$SCRIPT_LOC")"
+
+
 
 #we should be in update_merge/sh
 UPDATE_MERGE_BASE_DIR=$(pwd)/..
