@@ -75,11 +75,25 @@ object UpdateMerge {
       //check all dirs BEFORE running anything
       dirs.foreach(checkCwd)
 
-      dirs.foreach(updateMerge)
+      val results = dirs.map(d => (d, updateMerge(d)))
+
+      println("--------------------------------------")
+
+      def failureMessage(code: Int): String =
+        if(code != 0) {
+          " ***FAILURE***"
+        } else {
+          ""
+        }
+
+      results.foreach {
+        case (dir, exitCode) => println(
+          s"$dir: exit code $exitCode" + failureMessage(exitCode))
+      }
     }
   }
 
-  def updateMerge(dir: File): Unit = {
+  def updateMerge(dir: File): Int = {
     checkCwd(dir)
 
 
@@ -92,6 +106,8 @@ object UpdateMerge {
         new File(dir, "make_stderr"))
 
       println(s"Finished with $dir, final exit code: $exitCode")
+
+      exitCode
     } else {
       throw new RuntimeException(s"Git.pullAndMergeMasterWithCurrentBranch(dir).! " +
         s"returned exit code $gitExitCode")
