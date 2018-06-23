@@ -90,6 +90,17 @@ object UpdateMerge {
         case (dir, exitCode) => println(
           s"$dir: exit code $exitCode" + failureMessage(exitCode))
       }
+
+      //exit success if every build succeeded
+      //failure otherwise
+      val finalExitCode = 
+        if(results.forall(_._2 == 0)) {
+          0
+        } else {
+          1
+        }
+
+      System.exit(finalExitCode)
     }
   }
 
